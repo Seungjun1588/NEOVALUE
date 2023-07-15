@@ -1,0 +1,3 @@
+"0","# 필요한 정보만 남김"
+"0","MDCode = MDCode[-1,] %>% select(STR_CD,SHOP_CD,SHOP_NAME)"
+"0","head(MDCode)"

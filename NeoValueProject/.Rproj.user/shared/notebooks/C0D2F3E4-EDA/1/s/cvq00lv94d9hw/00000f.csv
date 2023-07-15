@@ -1,0 +1,6 @@
+"0","# install.packages(""data.table"")"
+"0","library(data.table)"
+"0","library(readxl)"
+"0","library(tidyverse)"
+"0","library(readxl)"
+"0","setwd(""C:/Users/user/Seungjun/NeoValue/230616_네오밸류 데이터/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/후지쯔 매출내역(Open~2210)"")"

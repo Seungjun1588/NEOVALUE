@@ -1,0 +1,21 @@
+# install.packages("data.table")
+library(data.table)
+
+
+
+
+getwd()
+setwd("C:/Users/user/연세대학교 통계데이터사이언스학과 Dropbox/‍이승준/contest/230616_네오밸류 데이터")
+data_path = "C:/Users/user/연세대학교 통계데이터사이언스학과 Dropbox/‍이승준/contest/230616_네오밸류 데이터/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/KICC 매출내역(2210~2304)"
+
+dat = fread(paste0(data_path,"/H6L_당일매출내역_202210.xlsx"))
+
+library(readxl)
+
+dat= readxl::read_excel(paste0(data_path,"/H6L_당일매출내역_202210.xlsx"))
+
+
+setwd(paste0(data_path))
+
+
+read_excel("H6L_당일매출내역_202210.xlsx")
