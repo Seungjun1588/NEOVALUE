@@ -54,7 +54,20 @@ table(MDCustomer$SEX_CD)
 prop.table(table(MDCustomer$SEX_CD)) # 성비
 
 # 생일은 중요하지 않고, 나이가 중요하다고 생각
+MDCustomer %>% 
+  mutate(BIRTH_YEAR = substr(BIRTH_DT,1,4),
+         BIRTH_MONTH = substr(BIRTH_DT,5,6),
+         AGE = 2023-as.numeric(BIRTH_YEAR)) -> MDCustomer
 
+MDCustomer %>% 
+  mutate(AGE_INT = case_when(AGE <10 ~ "<10",
+                             AGE <21 ~ "10~20",
+                             AGE <31 ~ "21~30",
+                             AGE <41 ~ "31~40",
+                             AGE <51 ~ "41~50",
+                             AGE <61 ~ "51~60",
+                             AGE >=61 ~">61")) -> MDCustomer
+MDCustomer %>% select(AGE_INT) %>% table
 
 # 지역
 tab = table(MDCustomer$ADDR1)
@@ -78,6 +91,70 @@ MDSANL = MDSANL %>% arrange(SHOP_NAME)
 summary(MDSANL)
 
 MDSANL %>% filter(is.na(MDSANL$WEEK))
+
+
+
+
+
+# 요약 정보
+MDSANL %>%
+  group_by(SHOP_NAME) %>%
+  summarise(FIRST_SALE = first(SALE_DT),
+            LAST_SALE=last(SALE_DT),
+            MIN_SALE=min(TOT_SALE_AMT),
+            MAX_SALE =max(TOT_SALE_AMT),
+            MEAN_SALE=mean(TOT_SALE_AMT),
+            MAD_SALE =median(TOT_SALE_AMT)) -> SUMMARY_SANL
+
+SUMMARY_SANL %>%
+  arrange(desc(MEAN_SALE)) %>%
+  head(20) %>% select(SHOP_NAME) -> meantop20
+
+SUMMARY_SANL %>%
+  arrange(desc(MAD_SALE)) %>%
+  head(20) %>%  select(SHOP_NAME) -> madtop20
+
+saletop = intersect(meantop20,madtop20)
+
+SUMMARY_SANL %>% 
+  filter(SHOP_NAME %in% saletop[,,drop=T]) %>%
+  arrange(desc(MEAN_SALE))
+
+
+
+# 변수 추가
+MDSANL %>% 
+  mutate(POSTIME = paste0(substr(SALE_DT,1,4),"-",
+                          substr(SALE_DT,5,6),"-",
+                          substr(SALE_DT,7,8)),
+         date = as.POSIXct(POSTIME)) -> MDSANL
+
+# 상위 18개의 가게 매출 그래프
+for(i in 1:dim(saletop)[1]){
+  plot = MDSANL %>% 
+    filter(SHOP_NAME == saletop[i,,drop=T]) %>%
+    ggplot(aes(x=date,y=TOT_SALE_AMT)) +
+    ggtitle(paste(saletop[i,,drop=T])) +
+    geom_line()
+  print(plot)
+  
+}
+# 개별 가게를 연도 확인 코드
+MDSANL %>% filter(SHOP_NAME =="외부팝업행사") %>% select(date) %>% unique %>% view()
+
+# 상위 18개의 가게 매출 그래프 겹쳐 그리기
+MDSANL %>% 
+  filter(SHOP_NAME %in% saletop[,,drop=T],SHOP_NAME != "CU편의점") %>% 
+  ggplot(aes(x=date,y=TOT_SALE_AMT)) +
+  geom_line(aes(color=SHOP_NAME),alpha=0.3)
+  
+
+# 특정 가게 뜯어보기
+MDSANL %>% 
+  filter(SHOP_NAME =="도쿄등심") %>% 
+  ggplot(aes(x=DAY_WEEK,y=TOT_SALE_AMT)) +
+  geom_boxplot(aes(color=as.factor(DAY_WEEK)))
+
 #------------------------------------------------------------------#
 # 포인트적립(CRM.CR_POINT_ADD)
 MDPoint = read_excel("멤버십 매출.xlsx",sheet="포인트적립(CRM.CR_POINT_ADD)")
@@ -93,6 +170,54 @@ sum(!is.na(MDPoint$TRADE_CD))
 sum(!is.na(MDPoint$VEN_CD))
 
 MDPoint = MDPoint %>% select(-TRADE_CD,-VEN_CD)
+
+# 포인트 적립 하는 사람들 횟수 히스토그램
+MDPoint %>% 
+  group_by(CUST_ID) %>% 
+  summarise(n=n()) %>% 
+  select(CUST_ID,n) %>% 
+  arrange(desc(n)) %>% 
+  ggplot(aes(n)) +
+  geom_histogram(aes(y=after_stat(count/sum(count))))
+
+# 생각보다 포인트 적립을 열심히 하는 사람들이 많다. 
+MDPoint %>% 
+  group_by(CUST_ID) %>% 
+  summarise(n=n()) %>% 
+  mutate(cnt = case_when(n<2~"n=1",
+                         n<5~"<5",
+                         n<10~"5~10",
+                         n<20~"10~20",
+                         n<30~"20~30",
+                         n>=30~">30"),
+         cnt=factor(cnt,levels=c("n=1","<5","5~10","10~20","20~30",">30"))) %>% 
+  ggplot() +
+    geom_bar(aes(x=cnt,y=after_stat(count/sum(count))))
+
+# 재방문이 높은 사람들이 주로 가는 가게, 소비 금액 파악해보기
+MDPoint %>% 
+  group_by(CUST_ID) %>% 
+  summarise(n=n()) %>% 
+  filter(n>30) %>%  select(CUST_ID) -> loyalID  # 재방문 높은 아이디
+
+# 특정 가게 방문 횟수
+MDPoint %>% 
+  filter(CUST_ID %in% loyalID[,,drop=T]) %>% 
+  group_by(SHOP_CD) %>% 
+  summarise(n=n(),MEAN_SALE=mean(as.numeric(TRADE_AMT))) %>% 
+  arrange(desc(n)) -> SHOP_VISIT
+  
+# 가게 이름 가져와서 붙이기
+MDCode %>% 
+  group_by(SHOP_CD) %>% 
+  summarise(SHOP_LIST = first(SHOP_NAME)) -> SHOP_LIST
+
+left_join(SHOP_VISIT,SHOP_LIST,by=c("SHOP_CD")) %>% 
+  select(SHOP_CD,SHOP_LIST,n,MEAN_SALE) # SHOP_CD =0인건 확인안됨...
+
+# 경로 파악
+ 
+
 #------------------------------------------------------------------#
 # save
 library(openxlsx)
