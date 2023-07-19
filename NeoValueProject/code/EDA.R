@@ -264,7 +264,9 @@ left_join(SHOP_VISIT,SHOP_LIST,by=c("SHOP_CD")) %>%
   select(SHOP_CD,SHOP_LIST,n,MEAN_SALE) # SHOP_CD =0인건 확인안됨...
 
 # 경로 파악
- 
+
+
+
 
 #------------------------------------------------------------------#
 # save
