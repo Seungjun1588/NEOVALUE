@@ -8,7 +8,7 @@ library(tidyverse)
 #------------------------------------------------------------------#
 #------------------------------------------------------------------#
 
-setwd("C:/Users/user/Seungjun/NeoValue/230616_네오밸류 데이터/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/후지쯔 매출내역(Open~2210)")
+setwd("C:/Seungjun/neovalue/NEOVALUE/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/후지쯔 매출내역(Open~2210)")
 library(readxl)
 #------------------------------------------------------------------#
 
@@ -154,6 +154,54 @@ MDSANL %>%
   filter(SHOP_NAME =="도쿄등심") %>% 
   ggplot(aes(x=DAY_WEEK,y=TOT_SALE_AMT)) +
   geom_boxplot(aes(color=as.factor(DAY_WEEK)))
+
+# 카테고리 붙이기
+category = read_excel("임대계약관리(코드 기초자료).xlsx")
+category = category[-1,]
+category %>% select(SHOP_CD,CATE_NAME) -> cate
+
+left_join(MDSANL,cate,by=c("SHOP_CD"))  -> df
+df$CATE_NAME[is.na(df$CATE_NAME)] = "양식"
+sum(is.na(df$CATE_NAME))
+
+df %>% 
+  group_by(CATE_NAME,date) %>% 
+  summarise(MEAN_SALE = mean(TOT_SALE_AMT)) %>% 
+  ggplot(aes(x=date,y=MEAN_SALE)) +
+  geom_line(aes(color=CATE_NAME),alpha=0.3)
+
+SHOP_lst = unique(df$CATE_NAME)
+for(i in 1:19){
+  df %>% 
+    filter(CATE_NAME %in% SHOP_lst[i]) %>% 
+    ggplot(aes(x=date,y=TOT_SALE_AMT)) +
+    ggtitle(SHOP_lst[i]) +
+    geom_line(aes(color=SHOP_NAME),alpha=0.3) -> plot
+  print(plot)
+}
+
+
+df %>% 
+  filter(SHOP_NAME =="식물원") %>% 
+  ggplot() +
+  geom_point(aes(x=DAY_WEEK,y=TOT_SALE_AMT,color=as.factor(DAY_WEEK)),alpha=0.5)
+
+# boxplot
+df %>% 
+  filter(SHOP_NAME =="식물원") %>% 
+  ggplot() +
+  geom_boxplot(aes(x=DAY_WEEK,y=TOT_SALE_AMT,color=as.factor(DAY_WEEK)),alpha=0.5)
+
+df %>% 
+  mutate(MONTH = substr(SALE_DT,5,6),
+         YEAR = substr(SALE_DT,1,4)) %>% 
+  group_by(YEAR,MONTH,SHOP_NAME) %>% 
+  summarise(SHOP_NAME = first(SHOP_NAME),
+            MEAN_SALE= mean(TOT_SALE_AMT)) %>% 
+  ungroup() %>% 
+  filter(SHOP_NAME =="플레이위드미") %>% 
+  ggplot() +
+  geom_line(aes(x=MONTH,y=MEAN_SALE,color=as.factor(YEAR)),alpha=0.5)
 
 #------------------------------------------------------------------#
 # 포인트적립(CRM.CR_POINT_ADD)
