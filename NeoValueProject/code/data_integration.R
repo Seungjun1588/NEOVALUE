@@ -3,12 +3,14 @@ library(data.table)
 library(readxl)
 library(tidyverse)
 library(readxl)
+library(openxlsx)
 
 #---------------------------------------------------------------------#
 # 매출 데이터 통합
 #---------------------------------------------------------------------#
 # 상위 디렉토리
-pwd = "C:/Users/user/Seungjun/NeoValue/230616_네오밸류 데이터/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/후지쯔 매출내역(Open~2210)/일별"
+
+pwd = "C:/Seungjun/neovalue/NEOVALUE/230616_네오밸류 데이터(발송용)/네오밸류 데이터/02_운영데이터 등/230531_광교 데이터/후지쯔 매출내역(Open~2210)/일별"
 
 #---------------------------------------------------------------------#
 #---------------------------------------------------------------------#
@@ -63,7 +65,8 @@ salescnt19 = MergedDataSet(year=2019,start=4,pwd=dir)
 salescnt20 = MergedDataSet(year=2020,start=1,pwd=dir)
 salescnt21 = MergedDataSet(year=2021,start=1,pwd=dir)
 salescnt22 = MergedDataSet(year=2022,start=1,end=10,pwd=dir)
-TotalSalesCnt = full_join(salescnt19,salescnt20,salescnt21,by=c("SHOP_CD","SHOP_NAME"))
+TotalSalesCnt = full_join(salescnt19,salescnt20,by=c("SHOP_CD","SHOP_NAME"))
+TotalSalesCnt = full_join(TotalSalesCnt,salescnt21,by=c("SHOP_CD","SHOP_NAME"))
 TotalSalesCnt = full_join(TotalSalesCnt,salescnt22,by=c("SHOP_CD","SHOP_NAME"))
 
 
@@ -88,7 +91,8 @@ sales19 = MergedDataSet(year=2019,start=4,pwd=dir)
 sales20 = MergedDataSet(year=2020,start=1,pwd=dir)
 sales21 = MergedDataSet(year=2021,start=1,pwd=dir)
 sales22 = MergedDataSet(year=2022,start=1,end=10,pwd=dir)
-TotalSales = full_join(sales19,sales20,sales21,by=c("SHOP_CD","SHOP_NAME"))
+TotalSales = full_join(sales19,sales20,by=c("SHOP_CD","SHOP_NAME"))
+TotalSales = full_join(TotalSales,sales21,by=c("SHOP_CD","SHOP_NAME"))
 TotalSales = full_join(TotalSales,sales22,by=c("SHOP_CD","SHOP_NAME"))
 
 
@@ -101,3 +105,35 @@ TotalSales %>%
   group_by(SHOP_NAME) %>% 
   summarise(n=n()) %>% 
   arrange(desc(n))
+
+
+# save
+totalsales = createWorkbook("TotalSales")
+addWorksheet(totalsales,"sales")
+writeDataTable(totalsales,"sales",TotalSales)
+saveWorkbook(totalsales,file =paste0(dir,"/","Totalsales.xlsx"),overwrite =T)
+
+
+
+#--------------------------------------------------------------------#
+#--------------------------------------------------------------------#
+## 순매출
+
+
+dir = paste0(pwd,"/순매출")
+
+# 일별 순매출
+sales19net = MergedDataSet(year=2019,start=4,pwd=dir)
+sales20net = MergedDataSet(year=2020,start=1,pwd=dir)
+sales21net = MergedDataSet(year=2021,start=1,pwd=dir)
+sales22net = MergedDataSet(year=2022,start=1,end=10,pwd=dir)
+TotalSalesNet = full_join(sales19net,sales20net,by=c("SHOP_CD","SHOP_NAME"))
+TotalSalesNet = full_join(TotalSalesNet,sales21net,by=c("SHOP_CD","SHOP_NAME"))
+TotalSalesNet = full_join(TotalSalesNet,sales22net,by=c("SHOP_CD","SHOP_NAME"))
+
+
+dim(TotalSales)
+length(unique(TotalSales$SHOP_CD))
+length(unique(TotalSales$SHOP_NAME))
+
+
