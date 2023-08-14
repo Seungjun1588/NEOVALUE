@@ -345,6 +345,7 @@ kids %>%
 level = 1*(seq(dim(kids)[1])>294)
 
 # 개입모형 적합합
+# 유형 1
 fit = Arima(kids %>% select(SALE_SCALED),order=c(0,1,2),
       seasonal = list(order=c(0,1,2), period=7),
       xreg = level,
@@ -353,15 +354,26 @@ fit = Arima(kids %>% select(SALE_SCALED),order=c(0,1,2),
 # 결과 : 1.15(천만원) 정도 평균이 차이 난다.
 summary(fit)
 
-# fit.i = arimax(
-#   kids %>% select(SALE_SCALED),
-#   order=c(0,1,2),
-#   seasonal = list(order=c(0,1,2), period=7),
-#   xtransf = data.frame(level=level),
-#   transfer = list(c(0,1)),
-#   method="CSS"
-# )
-# summary(fit.i)
+# 유형 3
+fit.i = arimax(
+  kids %>% select(SALE_SCALED),
+  order=c(0,1,2),
+  seasonal = list(order=c(0,1,2), period=7),
+  xtransf = data.frame(level=level),
+  transfer = list(c(1,0)),
+  method="ML"
+)
+summary(fit.i)
+
+#
+
+plot(ts(
+  stats::filter(level,filter=-0.4811,method='recursive', side=1)*
+    (1.7367),frequency=365,start=294),ylab='Event Effects',
+  type='h'); abline(h=0)
+
+
+
 
 # 사후분석
 acf(fit$residuals, lag.max = 35)
